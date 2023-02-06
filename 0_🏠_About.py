@@ -39,9 +39,16 @@ with open(css_file) as f:
 about1, about2 = st.columns([7,3])
 with about1:
     st.markdown(' ')
-    st.title('Statviewer.app')
     st.markdown(' ')
-    st.markdown('###### StatViewer aims to simplify financial analysis by providing comprehensive, alternative statistics with unique data, accessible through an intuitive user interface, making investment analysis accessible to a wider audience.')
+    st.text(''' 
+░█▀▀▀█ ▀▀█▀▀ ─█▀▀█ ▀▀█▀▀ ░█──░█ ▀█▀ ░█▀▀▀ ░█──░█ ░█▀▀▀ ░█▀▀█ ─ ─█▀▀█ ░█▀▀█ ░█▀▀█ 
+─▀▀▀▄▄ ─░█── ░█▄▄█ ─░█── ─░█░█─ ░█─ ░█▀▀▀ ░█░█░█ ░█▀▀▀ ░█▄▄▀ ▄ ░█▄▄█ ░█▄▄█ ░█▄▄█ 
+░█▄▄▄█ ─░█── ░█─░█ ─░█── ──▀▄▀─ ▄█▄ ░█▄▄▄ ░█▄▀▄█ ░█▄▄▄ ░█─░█ █ ░█─░█ ░█─── ░█───
+                                                                                                           
+                                                                                                                       
+''')
+    st.markdown(' ')
+    st.markdown('###### StatViewer aims to simplify financial analysis by providing comprehensive, alternative statistics with unique data, accessible through an intuitive user interface, making financial analysis accessible to a wider audience.')
 
 def load_lottieurl(url: str):
     r = requests.get(url)
