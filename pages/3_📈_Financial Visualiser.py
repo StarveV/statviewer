@@ -3,7 +3,6 @@ import yfinance as yf
 import plotly.express as px
 import plotly.graph_objs as go
 import pandas as pd
-import time
 from pathlib import Path
 
 
@@ -58,9 +57,7 @@ if ticker:
     # Loading screen
     with st.spinner('Retrieving data...'):
         # Get the balance sheet data
-        balance_sheet_data = stock.balance_sheet 
         income_statement_data = stock.income_stmt
-        cashflow_data = stock.cash_flow
 
         # Get the financial data Cant USEEEEEEEEEEEEEEEEEEEEEE
         financial_data = stock.info
