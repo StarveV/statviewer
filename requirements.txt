@@ -6,4 +6,4 @@ requests==2.28.1
 streamlit==1.17.0
 streamlit_lottie==0.0.3
 streamlit_option_menu==0.3.2
-yfinance==0.2.9
+yfinance==0.2.10
