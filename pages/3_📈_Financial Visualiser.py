@@ -4,7 +4,7 @@ import plotly.express as px
 import plotly.graph_objs as go
 import pandas as pd
 from pathlib import Path
-
+from yahooquery import Ticker
 
 #  ---- settings ----
 page_title = "Financial Visualiser"
@@ -35,16 +35,14 @@ with open(css_file) as f:
 ticker = st.sidebar.text_input('Enter ant ticker to display their financial statistics', 'AAPL')
 st.sidebar.write('The current selected ticker is:', ticker.upper()) 
 data_selection = st.sidebar.multiselect('Select displayed data', ['Stock Price','Income Statement'], default = 'Income Statement') # default='Stock Price'
+annual_or_quarter = st.sidebar.radio('Annual or Quarter Data:', ('Annual', 'Quarter '), horizontal=True, index=(0))
 if 'Income Statement' in data_selection:
     df_is_select = st.sidebar.radio('Display the source data:', ('Yes', 'No'), horizontal=True, index=(1))
 # Display warning if ticker is not found
-try:
-    stock = yf.Ticker(ticker)
-    # Perform task A here
-except Exception as e:
-    st.warning('This is a warning', icon="⚠️")
 
-stock_data = stock.history(period="max")
+stock = Ticker(ticker)
+
+
 
 # Heading 
 st.markdown("##### An interactive financial dash board to display the financial situation of any listed company with an intuitive GUI.") 
@@ -57,28 +55,48 @@ if ticker:
     # Loading screen
     with st.spinner('Retrieving data...'):
         # Get the balance sheet data
-        income_statement_data = stock.income_stmt
+        if annual_or_quarter == 'Annual':
+            income_stmt = stock.income_statement(frequency='a')
+        else:
+            income_stmt = stock.income_statement(frequency='q')
 
-        # Get the financial data Cant USEEEEEEEEEEEEEEEEEEEEEE
-        financial_data = stock.info
+        income_stmt = income_stmt.reset_index()
+        income_stmt = income_stmt.drop(income_stmt.columns[0], axis=1)
+        income_stmt = income_stmt.set_index(income_stmt.columns[0])
+        income_stmt = income_stmt.drop(income_stmt.index[-1]) # weird bug to display an aditional annual data of yahooquery
+        income_stmt = income_stmt.transpose()
+        income_statement_data = income_stmt
+
 
         # Income statement dataframe
         data = {
-            'Total Revenue': income_statement_data.loc['Total Revenue'],
-            'Cost of revenue': income_statement_data.loc['Cost Of Revenue'],
-            'Gross profit': income_statement_data.loc['Gross Profit'],
-            'Operating expenses': income_statement_data.loc['Operating Expense'],
-            'Operating income': income_statement_data.loc['Operating Income'],
-            'Interest expense': income_statement_data.loc['Net Non Operating Interest Income Expense'],
-            'Other Income Expense': income_statement_data.loc['Other Income Expense'],
-            'Other Non Operating Income Expenses': income_statement_data.loc['Other Non Operating Income Expenses'] if 'Other Non Operating Income Expenses' in income_statement_data.index else 0,
-            'Pretax Income': income_statement_data.loc['Pretax Income'],
-            'Tax Provision': income_statement_data.loc['Tax Provision'],
-            'Net income': income_statement_data.loc['Net Income']
+            'Total Revenue': income_statement_data.loc['TotalRevenue'],
+            'Cost of revenue': income_statement_data.loc['CostOfRevenue'],
+            'Gross profit': income_statement_data.loc['GrossProfit'],
+            'Operating expenses': income_statement_data.loc['OperatingExpense'],
+            'Operating income': income_statement_data.loc['OperatingIncome'],
+            'Interest expense': income_statement_data.loc['NetNonOperatingInterestIncomeExpense'],
+            'Other Income Expense': income_statement_data.loc['OtherIncomeExpense'],
+            'Other Non Operating Income Expenses': income_statement_data.loc['OtherNonOperatingIncomeExpenses'] if 'OtherNonOperatingIncomeExpenses' in income_statement_data.index else 0,
+            'Pretax Income': income_statement_data.loc['PretaxIncome'],
+            'Tax Provision': income_statement_data.loc['TaxProvision'],
+            'Net income': income_statement_data.loc['NetIncome']
         }
 
         data=pd.DataFrame(data)
-
+        data = data.rename(columns={'TotalRevenue':'Total Revenue', 
+                                    'CostOfRevenue':'Cost of revenue',
+                                    'GrossProfit':'Gross profit',
+                                    'OperatingExpense': 'Operating expenses',
+                                    'OperatingIncome': 'Operating income',
+                                    'NetNonOperatingInterestIncomeExpense': 'Interest expense',
+                                    'OtherIncomeExpense':'Other Income Expense',
+                                    'OtherNonOperatingIncomeExpenses':'Other Non Operating Income Expenses',
+                                    'PretaxIncome': 'Pretax Income',
+                                    'NetIncome':'Net income'})
+        data = data.replace('nan', 0)
+        data = data.astype(float)
+   
 def format_number(number):
     if number >= 1000000000:
         return '{:.2f}B'.format(number / 1000000000)
@@ -106,36 +124,36 @@ if 'Income Statement' in data_selection:
         # Total revenue
         with is1:
             # Calculate the change in value compared to the previous year
-            value_change_tr = data['Total Revenue'][0] - data['Total Revenue'][1]
+            value_change_tr = data['Total Revenue'][3] - data['Total Revenue'][2]
             # Calculate the percentage change compared to the previous year
             tr_percent_change = (value_change_tr / data['Total Revenue'][2]) * 100
             tr_percent_change = round(tr_percent_change,2)
 
-            tr_display = data['Total Revenue'][0]
+            tr_display = data['Total Revenue'][3]
             tr_display = format_number(tr_display)
             st.metric("Total Revenue:", tr_display,f"{tr_percent_change}%")
         
         # Cost of revenue
         with is2:
             # Calculate the change in value compared to the previous year
-            value_change_cor = data['Cost of revenue'][0] - data['Cost of revenue'][1]
+            value_change_cor = data['Cost of revenue'][3] - data['Cost of revenue'][2]
             # Calculate the percentage change compared to the previous year
             cor_percent_change = (value_change_cor / data['Cost of revenue'][2]) * 100
             cor_percent_change = round(cor_percent_change,2)
 
-            cor_display = data['Cost of revenue'][0]
+            cor_display = data['Cost of revenue'][3]
             cor_display = format_number(cor_display)
             st.metric("Cost of Revenue:", cor_display,f"{cor_percent_change}%")
         
         # Net income
         with is3:
             # Calculate the change in value compared to the previous year
-            value_change_ni = data['Net income'][0] - data['Net income'][1]
+            value_change_ni = data['Net income'][3] - data['Net income'][2]
             # Calculate the percentage change compared to the previous year
             ni_percent_change = (value_change_ni / data['Net income'][2]) * 100
             ni_percent_change = round(ni_percent_change,2)
 
-            ni_display = data['Net income'][0]
+            ni_display = data['Net income'][3]
             ni_display = format_number(ni_display)
             st.metric("Net Income:", ni_display,f"{ni_percent_change}%")
 
@@ -151,9 +169,11 @@ if 'Income Statement' in data_selection:
             overall_choice = st.radio('Choose a graph type ', ('Bar ', 'Area '), horizontal=True)
 
         data_plot = data[['Total Revenue', 'Cost of revenue', 'Gross profit','Operating expenses', 'Operating income','Other Income Expense','Other Non Operating Income Expenses','Net income']].reset_index()
-        data_plot = data_plot.melt(id_vars='index', value_vars=['Total Revenue', 'Cost of revenue', 'Gross profit','Operating expenses', 'Operating income','Other Income Expense','Other Non Operating Income Expenses','Net income'])
+        
+        
+        data_plot = data_plot.melt(id_vars='asOfDate', value_vars=['Total Revenue', 'Cost of revenue', 'Gross profit','Operating expenses', 'Operating income','Other Income Expense','Other Non Operating Income Expenses','Net income'])
         if overall_choice == 'Bar ':
-            overall_fig_bar = px.bar(data_plot, x='index', y='value', color='variable', barmode='group', height=350)
+            overall_fig_bar = px.bar(data_plot, x='asOfDate', y='value', color='variable', barmode='group', height=350)
             overall_fig_bar.update_layout(
                 plot_bgcolor='rgba(0,0,0,0)',
                 paper_bgcolor='rgba(0,0,0,0)'
@@ -161,7 +181,7 @@ if 'Income Statement' in data_selection:
 
             st.plotly_chart(overall_fig_bar, use_container_width=True)
         else:
-            overall_fig_line = px.area(data_plot, x='index', y='value', color='variable', height=350)
+            overall_fig_line = px.area(data_plot, x='asOfDate', y='value', color='variable', height=350)
             overall_fig_line.update_layout(
                 plot_bgcolor='rgba(0,0,0,0)',
                 paper_bgcolor='rgba(0,0,0,0)'
@@ -177,9 +197,9 @@ if 'Income Statement' in data_selection:
             st.markdown('### Total Revenue Break Down:')
             st.markdown("Click on the legend to hide any unwanted variables")
             tr_break_plot = data[['Cost of revenue','Operating expenses','Other Income Expense','Other Non Operating Income Expenses','Tax Provision','Net income']].reset_index()
-            tr_break_plot = tr_break_plot.melt(id_vars='index', value_vars=['Cost of revenue','Operating expenses', 'Other Income Expense','Other Non Operating Income Expenses','Tax Provision','Net income'])
+            tr_break_plot = tr_break_plot.melt(id_vars='asOfDate', value_vars=['Cost of revenue','Operating expenses', 'Other Income Expense','Other Non Operating Income Expenses','Tax Provision','Net income'])
 
-            tr_break_bar = px.bar(tr_break_plot, x='index', y='value', color='variable', barmode='stack', height=350, width=200)
+            tr_break_bar = px.bar(tr_break_plot, x='asOfDate', y='value', color='variable', barmode='stack', height=350, width=200)
             tr_break_bar.update_layout(
                 legend=dict(orientation="h",yanchor="bottom",y=1.02,xanchor="right",x=0.9),
                 plot_bgcolor='rgba(0,0,0,0)',
@@ -204,16 +224,16 @@ if 'Income Statement' in data_selection:
             st.plotly_chart(tr_break_donut, use_container_width=True)
 
         # Sankey diagram for income statement
-        Gross_profit = income_statement_data.loc['Gross Profit'][1]
-        cost_of_revenue = income_statement_data.loc['Cost Of Revenue'][1]
-        opt_exp = income_statement_data.loc['Operating Expense'][1]
-        opt_income = income_statement_data.loc['Operating Income'][1]
-        pretax_income = income_statement_data.loc['Pretax Income'][1]
-        interest_exp = income_statement_data.loc['Net Non Operating Interest Income Expense'][1]
-        other_nonincome_exp = income_statement_data.loc['Other Income Expense'][1]
-        other_non_opt_income_exp = income_statement_data.loc['Other Non Operating Income Expenses'][1] if 'Other Non Operating Income Expenses' in income_statement_data.index else 0
-        net_income = income_statement_data.loc['Net Income'][1]
-        tax_provision =  income_statement_data.loc['Tax Provision'][1]
+        Gross_profit = income_statement_data.loc['GrossProfit'][1]
+        cost_of_revenue = income_statement_data.loc['CostOfRevenue'][1]
+        opt_exp = income_statement_data.loc['OperatingExpense'][1]
+        opt_income = income_statement_data.loc['OperatingIncome'][1]
+        pretax_income = income_statement_data.loc['PretaxIncome'][1]
+        interest_exp = income_statement_data.loc['NetNonOperatingInterestIncomeExpense'][1]
+        other_nonincome_exp = income_statement_data.loc['OtherIncomeExpense'][1]
+        other_non_opt_income_exp = income_statement_data.loc['OtherNonOperatingIncomeExpenses'][1] if 'OtherNonOperatingIncomeExpenses' in income_statement_data.index else 0
+        net_income = income_statement_data.loc['NetIncome'][1]
+        tax_provision =  income_statement_data.loc['TaxProvision'][1]
 
         # Sankey diagram for income statement
         df = pd.DataFrame({'From': ['Total Revenue', 'Total Revenue', 'Gross profit', 'Gross profit', 'Operating income', 'Operating income', 'Operating income', 'Operating income', 'Pretax Income', 'Pretax Income'], 
@@ -247,6 +267,7 @@ if 'Income Statement' in data_selection:
 
 # Stock Price options
 if 'Stock Price' in data_selection:
+    stock_data = stock.history(period="max")
     # Loading screen
     with st.spinner('Generating the dashboard...'):
         st.markdown('### Stock Price History:')

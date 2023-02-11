@@ -19,7 +19,7 @@ with open(css_file) as f:
     st.markdown('<style>{}</style>'.format(f.read()), unsafe_allow_html=True)
 
 st.caption('---')
-st.markdown('##### For any enquitres or bug reporting, please contact with the following email:')
+st.markdown('##### For any enquires or bug reporting, please contact with the following email:')
 st.markdown('##### wchwongg@gmail.com')
 
 st.caption('### Updates to this page will be available soon.')
