@@ -246,8 +246,8 @@ if 'Income Statement' in data_selection:
         target_indices = df['To'].map(lambda label: node_label.tolist().index(label))
 
         sankey = go.Sankey(node=dict(label=node_label,
-                                    x=[0.1,0.23,0.4,0.6,0.65,0.45,0.65,0.65,0.65,0.97,0.87],
-                                    y=[0.5,0.7,0.6,0.5,0.1,0.8,0.7,0.75,0.8,0.5,0.65]),
+                                    x=[0.1,0.23,0.4,0.6,0.65,0.45,0.65,0.97,0.65,0.97,0.87],
+                                    y=[0.5,0.7,0.6,0.5,0.1,0.8,0.7,0.45,0.8,0.5,0.65]),
                         link=dict(arrowlen=15,
                                     source=source_indices,
                                     target=target_indices,
