@@ -42,8 +42,6 @@ if 'Income Statement' in data_selection:
 
 stock = Ticker(ticker)
 
-
-
 # Heading 
 st.markdown("##### An interactive financial dash board to display the financial situation of any listed company with an intuitive GUI.") 
 st.caption("### The Financial Visualiser does not support ETF, support for the balance sheet and the cash flow statement coming soon.")
@@ -93,7 +91,7 @@ if ticker:
                                     'OtherIncomeExpense':'Other Income Expense',
                                     'OtherNonOperatingIncomeExpenses':'Other Non Operating Income Expenses',
                                     'PretaxIncome': 'Pretax Income',
-                                    'NetIncome':'Net income'})
+                                    'NetIncome':'Net income'}) 
         data = data.replace('nan', 0)
         data = data.astype(float)
    
@@ -114,7 +112,7 @@ def format_number(number):
         return '{:.2f}'.format(number)
 
 
-# display the selected graph
+# display the selected graph.
 # Show chart under the option of income statement
 if 'Income Statement' in data_selection:
     # Loading screen
@@ -155,7 +153,7 @@ if 'Income Statement' in data_selection:
 
             ni_display = data['Net income'][3]
             ni_display = format_number(ni_display)
-            st.metric("Net Income:", ni_display,f"{ni_percent_change}%")
+            st.metric("Net Income:", ni_display,f"{ni_percent_change}%") 
 
         # Income Statement at a Glance
         # 2 Columns for overall chart

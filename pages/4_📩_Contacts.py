@@ -22,4 +22,4 @@ st.caption('---')
 st.markdown('##### For any enquires or bug reporting, please contact with the following email:')
 st.markdown('##### wchwongg@gmail.com')
 
-st.caption('### Updates to this page will be available soon.')
+st.caption('### Updates to this page will be available soon.') 
