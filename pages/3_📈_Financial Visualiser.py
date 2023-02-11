@@ -295,7 +295,7 @@ if 'Stock Price' in data_selection:
         # Calculate the 1 day change
         close_1d = stock_data['Close'].iloc[-1]
         close_prev_1d = stock_data['Close'].iloc[-2]
-        pct_change_1d = (close_1d - close_prev_1d) / close_prev_1d
+        pct_change_1d = (close_1d - close_prev_1d) / close_prev_1d 
 
         # Calculate the 1 month change
         close_1m = stock_data['Close'].iloc[-1]
