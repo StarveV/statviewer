@@ -60,12 +60,13 @@ if ticker:
 
         income_stmt = income_stmt.reset_index()
         income_stmt = income_stmt.drop(income_stmt.columns[0], axis=1)
+        income_stmt = income_stmt[income_stmt["periodType"] != "TTM"] #weird bug
         income_stmt = income_stmt.set_index(income_stmt.columns[0])
-        income_stmt = income_stmt.drop(income_stmt.index[-1]) # weird bug to display an aditional annual data of yahooquery
+        income_stmt =income_stmt
         income_stmt = income_stmt.transpose()
         income_statement_data = income_stmt
 
-
+        
         # Income statement dataframe
         data = {
             'Total Revenue': income_statement_data.loc['TotalRevenue'],
