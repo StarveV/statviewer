@@ -32,7 +32,7 @@ with open(css_file) as f:
 
 # Input at sidebar
 # Input text box
-ticker = st.sidebar.text_input('Enter ant ticker to display their financial statistics', 'AAPL')
+ticker = st.sidebar.text_input('Enter any ticker to display their financial statistics', 'AAPL')
 st.sidebar.write('The current selected ticker is:', ticker.upper()) 
 data_selection = st.sidebar.multiselect('Select displayed data', ['Stock Price','Income Statement'], default = 'Income Statement') # default='Stock Price'
 annual_or_quarter = st.sidebar.radio('Annual or Quarter Data:', ('Annual', 'Quarter '), horizontal=True, index=(0))
@@ -48,6 +48,7 @@ st.caption("### The Financial Visualiser does not support ETF, support for the b
 st.caption('---')
 st.markdown(f'#### The current selected ticker is: {ticker.upper()}')     
 st.caption('### Open the side bar to change ticker and settings')
+st.caption('### This page is optimized for use with larger screens, making it most effective when accessed via a tablet or PC for an optimal user experience.')
 
 if ticker:
     # Loading screen
@@ -123,38 +124,136 @@ if 'Income Statement' in data_selection:
         # Total revenue
         with is1:
             # Calculate the change in value compared to the previous year
-            value_change_tr = data['Total Revenue'][3] - data['Total Revenue'][2]
+            value_change_tr = data['Total Revenue'][-1] - data['Total Revenue'][-2]
             # Calculate the percentage change compared to the previous year
-            tr_percent_change = (value_change_tr / data['Total Revenue'][2]) * 100
+            tr_percent_change = (value_change_tr / data['Total Revenue'][-2]) * 100
             tr_percent_change = round(tr_percent_change,2)
 
-            tr_display = data['Total Revenue'][3]
+            tr_display = data['Total Revenue'][-1]
             tr_display = format_number(tr_display)
             st.metric("Total Revenue:", tr_display,f"{tr_percent_change}%")
         
         # Cost of revenue
         with is2:
             # Calculate the change in value compared to the previous year
-            value_change_cor = data['Cost of revenue'][3] - data['Cost of revenue'][2]
+            value_change_cor = data['Cost of revenue'][-1] - data['Cost of revenue'][-2]
             # Calculate the percentage change compared to the previous year
-            cor_percent_change = (value_change_cor / data['Cost of revenue'][2]) * 100
+            cor_percent_change = (value_change_cor / data['Cost of revenue'][-2]) * 100
             cor_percent_change = round(cor_percent_change,2)
 
-            cor_display = data['Cost of revenue'][3]
+            cor_display = data['Cost of revenue'][-1]
             cor_display = format_number(cor_display)
             st.metric("Cost of Revenue:", cor_display,f"{cor_percent_change}%")
         
         # Net income
         with is3:
             # Calculate the change in value compared to the previous year
-            value_change_ni = data['Net income'][3] - data['Net income'][2]
+            value_change_ni = data['Net income'][-1] - data['Net income'][-2]
             # Calculate the percentage change compared to the previous year
-            ni_percent_change = (value_change_ni / data['Net income'][2]) * 100
+            ni_percent_change = (value_change_ni / data['Net income'][-2]) * 100
             ni_percent_change = round(ni_percent_change,2)
 
-            ni_display = data['Net income'][3]
+            ni_display = data['Net income'][-1]
             ni_display = format_number(ni_display)
             st.metric("Net Income:", ni_display,f"{ni_percent_change}%") 
+        
+        # 4 card for ratios:
+        is_ratio1,is_ratio2,is_ratio3,is_ratio4 = st.columns(4)
+        with is_ratio1:
+            # Gross profit margin
+            tr_is = data['Total Revenue'][-1] 
+            cogs_is = data['Cost of revenue'][-1]
+            GrossMargin_ratio = ((tr_is - cogs_is)/tr_is)* 100
+            GrossMargin_ratio = round(GrossMargin_ratio,2)
+            # gauge chart of gross margin
+            GM_ratio = go.Figure(go.Indicator(
+                mode = "gauge+number",
+                value = GrossMargin_ratio,
+                domain = {'x': [0, 1], 'y': [0, 1]},
+                title = {'text': "Gross Margin"},
+                gauge = {'axis': {'range': [None, 100]}}))
+
+            GM_ratio.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                height=250,
+                autosize=True
+            )
+            st.plotly_chart(GM_ratio, use_container_width=True)
+        
+        with is_ratio2:
+            # Opersting expense ratio
+            ope_is = data['Operating expenses'][-1]
+            OPE_ratio = (ope_is/tr_is)* 100
+            OPE_ratio = round(OPE_ratio,2)
+
+            # gauge chart of ope
+            OPE_ratio = go.Figure(go.Indicator(
+                mode = "gauge+number",
+                value = OPE_ratio,
+                domain = {'x': [0, 1], 'y': [0, 1]},
+                title = {'text': "OPE Ratio"},
+                gauge = {'axis': {'range': [None, 100]}}
+                ))
+
+            OPE_ratio.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                height=250,
+                autosize=True,
+                
+            )
+            st.plotly_chart(OPE_ratio, use_container_width=True)
+
+
+        with is_ratio3:
+            # Operating margin 
+            oi_is = data['Operating income'][-1]
+            oi_ratio = (oi_is/tr_is)* 100
+            op_ratio =round(oi_ratio,2)
+
+            # gauge chart of net profit margin
+            op_chart = go.Figure(go.Indicator(
+                mode = "gauge+number",
+                value = op_ratio,
+                domain = {'x': [0, 1], 'y': [0, 1]},
+                title = {'text': "Operating Margin"},
+                gauge = {'axis': {'range': [None, 100]}}
+                ))
+
+            op_chart.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                height=250,
+                autosize=True,
+                
+            )
+            st.plotly_chart(op_chart, use_container_width=True)
+
+
+        with is_ratio4:
+            # Net profit margin 
+            np_is = data['Net income'][-1]
+            np_ratio = (np_is/tr_is)* 100
+            np_ratio =round(np_ratio,2)
+
+            # gauge chart of net profit margin
+            pm_chart = go.Figure(go.Indicator(
+                mode = "gauge+number",
+                value = np_ratio,
+                domain = {'x': [0, 1], 'y': [0, 1]},
+                title = {'text': "Net Profit Margin"},
+                gauge = {'axis': {'range': [None, 100]}}
+                ))
+
+            pm_chart.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                height=250,
+                autosize=True,
+                
+            )
+            st.plotly_chart(pm_chart, use_container_width=True)
 
         # Income Statement at a Glance
         # 2 Columns for overall chart
@@ -174,6 +273,7 @@ if 'Income Statement' in data_selection:
         if overall_choice == 'Bar ':
             overall_fig_bar = px.bar(data_plot, x='asOfDate', y='value', color='variable', barmode='group', height=350)
             overall_fig_bar.update_layout(
+                legend=dict(orientation="h",yanchor="bottom",y=1.02,xanchor="right",x=0.9),
                 plot_bgcolor='rgba(0,0,0,0)',
                 paper_bgcolor='rgba(0,0,0,0)'
             )
