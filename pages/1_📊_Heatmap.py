@@ -52,7 +52,7 @@ with open(css_file) as f:
     
 
 # Heading
-st.subheader("The treemap below indicate the most discussed stocks and commodiity acorss different subreddit, and how bullish and bearish redditors are") 
+st.subheader("The treemap below indicate the most discussed stocks and commodiity acorss different subreddit, and how bullish and bearish redditors are in the past 7 days.") 
 
 with st.expander("What is RBI?"):
     st.markdown(" The RBI draws on the concepts of the Relative Strength Index (RSI) and the Volatility Index (VIX) and seeks to quantify retail investors' emotional state. The sentiment score is calculated by utilizing two distinct deep learning models, which analyze all entities identified in the posts of the designated subreddit during the past seven days. The database is updated on a daily basis to ensure the most accurate representation of retail investor sentiment. For more detailed information regarding the calculation of the RBI, please visit the 'About' page.")
