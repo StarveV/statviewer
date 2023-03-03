@@ -34,7 +34,7 @@ with open(css_file) as f:
 # Input text box
 ticker = st.sidebar.text_input('Enter any ticker to display their financial statistics', 'AAPL')
 st.sidebar.write('The current selected ticker is:', ticker.upper()) 
-data_selection = st.sidebar.multiselect('Select displayed data', ['Stock Price','Income Statement'], default = 'Income Statement') # default='Stock Price'
+data_selection = st.sidebar.multiselect('Select displayed data', ['Stock Price','Income Statement','Balance Sheet'], default = 'Income Statement') # default='Stock Price'
 annual_or_quarter = st.sidebar.radio('Annual or Quarter Data:', ('Annual', 'Quarter '), horizontal=True, index=(0))
 if 'Income Statement' in data_selection:
     df_is_select = st.sidebar.radio('Display the source data:', ('Yes', 'No'), horizontal=True, index=(1))
@@ -44,7 +44,7 @@ stock = Ticker(ticker)
 
 # Heading 
 st.markdown("##### An interactive financial dash board to display the financial situation of any listed company with an intuitive GUI.") 
-st.caption("### The Financial Visualiser does not support ETF, support for the balance sheet and the cash flow statement coming soon.")
+st.caption("### The Financial Visualiser does not support ETF, support for the the cash flow statement coming soon.")
 st.caption('---')
 st.markdown(f'#### The current selected ticker is: {ticker.upper()}')     
 st.caption('### Open the side bar to change ticker and settings')
@@ -311,7 +311,7 @@ if 'Income Statement' in data_selection:
             st.markdown(' ')
             st.markdown(' ')
             st.markdown(' ')
-            # Doughnut chart for the break down of total revenue
+            # Doghnut chart for the break down of total revenue
             tr_break_donut = tr_break_plot
 
             tr_break_donut = px.pie(tr_break_donut, values='value', names='variable', color='variable', hole=0.4, height=400, width=200)
@@ -361,7 +361,284 @@ if 'Income Statement' in data_selection:
         if df_is_select == 'Yes':
             st.dataframe(income_statement_data)
 
+        st.markdown('---')
 
+if 'Balance Sheet' in data_selection:
+    with st.spinner('Retrieving data...'):
+        # Get the balance sheet data
+        if annual_or_quarter == 'Annual':
+            balance_sheet = stock.balance_sheet(frequency='a')
+            income_stmt = stock.income_statement(frequency='a')
+        else:
+            balance_sheet = stock.balance_sheet(frequency='q')
+            income_stmt = stock.income_statement(frequency='q')
+
+        balance_sheet = balance_sheet.reset_index()
+        balance_sheet = balance_sheet.drop(balance_sheet.columns[0], axis=1)
+        balance_sheet = balance_sheet[balance_sheet["periodType"] != "TTM"] #weird bug
+        balance_sheet = balance_sheet.set_index(balance_sheet.columns[0])
+        balance_sheet = balance_sheet.transpose()
+
+        income_stmt = income_stmt.reset_index()
+        income_stmt = income_stmt.drop(income_stmt.columns[0], axis=1)
+        income_stmt = income_stmt[income_stmt["periodType"] != "TTM"] #weird bug
+        income_stmt = income_stmt.set_index(income_stmt.columns[0])
+        income_stmt = income_stmt.transpose()
+        
+        
+
+        # Get the needed data from the balance sheet
+        balance_sheet_data = {
+                    'Current Assets': balance_sheet.loc['CurrentAssets'],
+                    'Inventory': balance_sheet.loc['Inventory'],
+                    'Current Liabilities': balance_sheet.loc['CurrentLiabilities'],
+                    'Total Cash': balance_sheet.loc['CashCashEquivalentsAndShortTermInvestments'],
+                    'Account Receivables': balance_sheet.loc['AccountsReceivable'],
+                    'Inventory': balance_sheet.loc['Inventory'],
+                    'Receivables': balance_sheet.loc['Receivables'],
+                    'Other Current Assets': balance_sheet.loc['OtherCurrentAssets'],
+                    'Net PPE': balance_sheet.loc['NetPPE'],
+                    'Other Investments': balance_sheet.loc['OtherInvestments'],
+                    'Other Non Current Assets': balance_sheet.loc['OtherNonCurrentAssets'],
+                    'Current Debt': balance_sheet.loc['CurrentDebt'],
+                    'Accounts Payable': balance_sheet.loc['AccountsPayable'],
+                    'Deferred Revenue': balance_sheet.loc['CurrentDeferredRevenue'],
+                    'Other Current Liabilities': balance_sheet.loc['OtherCurrentLiabilities'],
+                    'Long Term Debt': balance_sheet.loc['LongTermDebt'],
+                    'Other Non Current Liabilities': balance_sheet.loc['OtherNonCurrentLiabilities'],
+                    'Other Non Current Payables': balance_sheet.loc['TradeandOtherPayablesNonCurrent'],
+                    'Stockholders Equity': balance_sheet.loc['StockholdersEquity'],
+                    'Net Income': income_stmt.loc['NetIncome'],
+                    'Total Assets': balance_sheet.loc['TotalAssets'],
+                    'Total Debt': balance_sheet.loc['TotalDebt'],
+
+                }    
+     
+        balance_sheet_data=pd.DataFrame(balance_sheet_data)
+        balance_sheet_data=balance_sheet_data
+        
+
+        balance_sheet_data = balance_sheet_data.astype(float)
+
+            
+        # Quick ratio  
+        value_change_quick = balance_sheet_data['Current Assets'][-1] - balance_sheet_data['Inventory'][-1]
+        quick_ratio = value_change_quick/balance_sheet_data['Current Liabilities'][-1]
+        quick_ratio = round(quick_ratio,2)
+
+        prev_quick_value = balance_sheet_data['Current Assets'][-2] - balance_sheet_data['Inventory'][-2]
+        prev_quick = prev_quick_value/balance_sheet_data['Current Liabilities'][-2]
+        prev_quick = round(prev_quick,2)
+        quick_change = quick_ratio-prev_quick
+        quick_change = round(quick_change,2)
+
+
+        # Extract the quick ratio data for the past 4 years
+        quick_ratio_data = balance_sheet.loc[['CurrentAssets','Inventory','CurrentLiabilities'], :].transpose()
+        quick_ratio_data = quick_ratio_data.astype(float)
+        quick_ratio_data['QuickRatio'] = (quick_ratio_data['CurrentAssets'] - quick_ratio_data['Inventory'])/quick_ratio_data['CurrentLiabilities']
+        
+        
+
+        # Define the color palette
+        quick_ratio_colour = ['rgb(70, 210, 210)']
+
+        # Create the area graph for current ratio
+        quick_ratio_area = px.area(quick_ratio_data, x=quick_ratio_data.index, y='QuickRatio', color_discrete_sequence=quick_ratio_colour)
+        quick_ratio_area.update_xaxes(title_text='Date')
+        quick_ratio_area.update_yaxes(title_text='Quick Ratio')
+        quick_ratio_area.update_layout(
+                margin=dict(l=10, r=10, t=10, b=3),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                height=170,
+                width = 100,
+                autosize=True
+            )         
+
+        
+        # Current Ratio
+        current_ratio = balance_sheet_data['Current Assets'][-1] / balance_sheet_data['Current Liabilities'][-1] 
+        prev_current_ratio = balance_sheet_data['Current Assets'][-2] / balance_sheet_data['Current Liabilities'][-2]
+        current_ratio_change = current_ratio-prev_current_ratio
+
+        current_ratio = round(current_ratio,2)
+        current_ratio_change = round(current_ratio_change,2) 
+
+        # Extract the current ratio data for the past 4 years
+        current_ratio_data = balance_sheet.loc[['CurrentAssets', 'CurrentLiabilities'], :].transpose()
+        current_ratio_data = current_ratio_data.astype(float)
+        current_ratio_data['CurrentRatio'] = current_ratio_data['CurrentAssets'] / current_ratio_data['CurrentLiabilities']
+        current_ratio_data = current_ratio_data.tail(4)
+
+
+        
+
+        # Define the color palette
+        current_ratio_colour = ['rgb(128, 177, 211)']
+
+        # Create the area graph for current ratio
+        current_ratio_area = px.area(current_ratio_data, x=current_ratio_data.index, y='CurrentRatio', color_discrete_sequence=current_ratio_colour)
+        current_ratio_area.update_xaxes(title_text='Date')
+        current_ratio_area.update_yaxes(title_text='Current Ratio')
+        current_ratio_area.update_layout(
+                margin=dict(l=10, r=10, t=10, b=3),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                height=170,
+                width = 100,
+                autosize=True
+            )
+
+        # ROE
+        roe = balance_sheet_data['Net Income'][-1]/balance_sheet_data['Stockholders Equity'][-1]
+        prev_roe = balance_sheet_data['Net Income'][-2]/balance_sheet_data['Stockholders Equity'][-2]
+        roe_change = roe-prev_roe
+
+        roe = round(roe,2)
+        roe_change = round(roe_change,2)
+
+        # Extract the ROE for the past 4 years
+        roe_data = balance_sheet_data['Net Income']/balance_sheet_data['Stockholders Equity']
+        
+        
+        # Create the area graph for ROE
+        roe_colour = ['#AEDF9B']
+        roe_area = px.area(roe_data, x=roe_data.index, y=roe_data, color_discrete_sequence=roe_colour)
+        roe_area.update_xaxes(title_text='Date')
+        roe_area.update_yaxes(title_text='ROE')
+        roe_area.update_layout(
+                margin=dict(l=10, r=10, t=10, b=3),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                height=170,
+                width = 100,
+                autosize=True
+            )
+
+        # Debt to Asset Ratio
+        debt_to_assets = balance_sheet_data['Total Debt'][-1]/balance_sheet_data['Total Assets'][-1]
+        prev_debt_to_assets = balance_sheet_data['Total Debt'][-2]/balance_sheet_data['Total Assets'][-2]
+        debt_to_assets_change = debt_to_assets-prev_debt_to_assets
+
+        debt_to_assets = round(debt_to_assets,2)
+        debt_to_assets_change = round(debt_to_assets_change,2)
+
+        # Extract the Debt to Asset Ratio for the past 4 years
+        debt_to_assets_data = balance_sheet_data['Total Debt']/balance_sheet_data['Total Assets']
+        
+        
+        # Create the area graph for Debt to Asset Ratio
+        debt_to_assets_colour = ['#DFCF9B']
+        debt_to_assets_area = px.area(debt_to_assets_data, x=debt_to_assets_data.index, y=debt_to_assets_data, color_discrete_sequence=debt_to_assets_colour)
+        debt_to_assets_area.update_xaxes(title_text='Date')
+        debt_to_assets_area.update_yaxes(title_text='Debt to Asset Ratio')
+        debt_to_assets_area.update_layout(
+                margin=dict(l=10, r=10, t=10, b=3),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                height=170,
+                width = 100,
+                autosize=True
+            )
+        # display card for quick ratio, current ratio, roe, debt to asset ratio
+        balance_sheet_metric1, balance_sheet_metric2, balance_sheet_metric3= st.columns(3)
+        with balance_sheet_metric1:
+            # display card for quick ratio
+            st.metric ("Quick Ratio", quick_ratio,quick_change)
+        with balance_sheet_metric2:
+            # display card for current ratio
+            st.metric ("Current Ratio", current_ratio,current_ratio_change)
+        with balance_sheet_metric3:
+            # display card for ROE
+            st.metric("ROE",roe,roe_change)
+        
+
+        
+
+        #display the area chart for quick rato and current ratio
+
+        qr_tab,cr_tab,roe_tab,debt_to_assets_tab = st.tabs(["Quick Ratio", "Current Ratio","ROE","Debt to Asset Ratio"])
+        with qr_tab:
+            st.plotly_chart(quick_ratio_area,use_container_width=True)
+        with cr_tab:
+            st.plotly_chart(current_ratio_area,use_container_width=True)
+        with roe_tab:
+            st.plotly_chart(roe_area,use_container_width=True)
+        with debt_to_assets_tab:
+            st.plotly_chart(debt_to_assets_area,use_container_width=True)
+                
+        
+        # Colour palette
+        colors_palette = ['#87bdd8','#daebe8','#cfe0e8','#667292','#77a8a8','#b9b0b0','#e3e0cc','#fefbd8','#fb967f','#e3eaa7']
+
+        # Doghnut Chart for Assets
+        asset_doghnut = balance_sheet_data[['Total Cash','Account Receivables','Inventory','Receivables','Other Current Assets','Net PPE','Other Investments','Other Non Current Assets']].reset_index()
+        asset_doghnut = asset_doghnut.melt(id_vars='asOfDate', value_vars=['Total Cash','Account Receivables','Inventory','Receivables','Other Current Assets','Net PPE','Other Investments','Other Non Current Assets'])
+
+        asset_doghnut_chart = px.pie(asset_doghnut, values='value', names='variable', color='variable', hole=0.4, 
+                                     height=450, width=200, color_discrete_sequence=colors_palette)
+        asset_doghnut_chart.update_layout(
+                legend=dict(orientation="h",yanchor="bottom",y=1.02,xanchor="right",x=0.6),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)'
+            )       
+
+
+        # Asset break down bar chart
+        asset_break_bar = px.bar(asset_doghnut, x='asOfDate', y='value', color='variable', barmode='stack', 
+                                 height=350, width=200, color_discrete_sequence=colors_palette)
+        asset_break_bar.update_layout(
+            legend=dict(orientation="h",yanchor="bottom",y=1.02,xanchor="right",x=0.9),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            bargap=0.5
+        )
+        # Assets break down
+        asset1, asset2 = st.columns([7,3])
+        with asset1:
+            st.markdown('### Assets Break Down:')
+            st.markdown("Click on the legend to hide any unwanted variables")
+            st.plotly_chart(asset_break_bar, use_container_width=True)
+
+        with asset2:
+            st.plotly_chart(asset_doghnut_chart, use_container_width=True)
+
+        # Colour palette
+        colors_palette2 = ['#A86355','#C18265','#C2B099','#F0DFA7','#D8BB8F','#F2EDE9','#5A5958','#B5BDB9','#F2D0E6','#A0A3D9']
+        # Liabilities donut chart
+        liabilities_doghnut = balance_sheet_data[['Current Debt','Accounts Payable','Deferred Revenue','Other Current Liabilities','Long Term Debt','Other Non Current Liabilities','Other Non Current Payables','Stockholders Equity']].reset_index()
+        liabilities_doghnut = liabilities_doghnut.melt(id_vars='asOfDate', value_vars=['Current Debt','Accounts Payable','Deferred Revenue','Other Current Liabilities','Long Term Debt','Other Non Current Liabilities','Other Non Current Payables','Stockholders Equity'])
+
+        liabilities_doghnut_chart = px.pie(liabilities_doghnut, values='value', names='variable', color='variable', hole=0.4, 
+                                     height=450, width=200, color_discrete_sequence=colors_palette2)
+        liabilities_doghnut_chart.update_layout(
+                legend=dict(orientation="h",yanchor="bottom",y=1.02,xanchor="right",x=0.6),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)'
+            )
+         
+
+
+        # Liabilities break down bar chart
+        liabilities_break_bar = px.bar(liabilities_doghnut, x='asOfDate', y='value', color='variable', barmode='stack', 
+                                 height=350, width=200, color_discrete_sequence=colors_palette2)
+        liabilities_break_bar.update_layout(
+            legend=dict(orientation="h",yanchor="bottom",y=1.02,xanchor="right",x=0.9),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            bargap=0.5
+        )
+        # Liabilities break down
+        liabilities1, liabilities2 = st.columns([7,3])
+        with liabilities1:
+            st.markdown('### Liabilities Break Down:')
+            st.markdown("Click on the legend to hide any unwanted variables")
+            st.plotly_chart(liabilities_break_bar, use_container_width=True)
+            
+
+        with liabilities2:    
+            st.plotly_chart(liabilities_doghnut_chart, use_container_width=True)
 
 
 # Stock Price options
