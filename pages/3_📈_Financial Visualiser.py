@@ -385,7 +385,6 @@ if 'Balance Sheet' in data_selection:
         income_stmt = income_stmt.set_index(income_stmt.columns[0])
         income_stmt = income_stmt.transpose()
         
-        st.write (balance_sheet)
 
         # Get the needed data from the balance sheet
         balance_sheet_data = {
