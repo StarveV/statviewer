@@ -434,7 +434,12 @@ if 'Balance Sheet' in data_selection:
 
 
         # Extract the quick ratio data for the past 4 years
-        quick_ratio_data = balance_sheet.loc[['CurrentAssets','Inventory','CurrentLiabilities'], :].transpose()
+        quick_ratio_data = {'CurrentAssets': balance_sheet.loc['CurrentAssets'] if 'CurrentAssets' in balance_sheet.index else 0,
+                            'Inventory': balance_sheet.loc['Inventory'] if 'Inventory' in balance_sheet.index else 0,
+                            'CurrentLiabilities': balance_sheet.loc['CurrentLiabilities'] if 'CurrentLiabilities' in balance_sheet.index else 0,
+                            }
+        
+        quick_ratio_data = pd.DataFrame(quick_ratio_data)
         quick_ratio_data = quick_ratio_data.astype(float)
         quick_ratio_data['QuickRatio'] = (quick_ratio_data['CurrentAssets'] - quick_ratio_data['Inventory'])/quick_ratio_data['CurrentLiabilities']
         
