@@ -385,7 +385,7 @@ if 'Balance Sheet' in data_selection:
         income_stmt = income_stmt.set_index(income_stmt.columns[0])
         income_stmt = income_stmt.transpose()
         
-        
+        st.write (balance_sheet)
 
         # Get the needed data from the balance sheet
         balance_sheet_data = {
@@ -411,7 +411,7 @@ if 'Balance Sheet' in data_selection:
                     'Net Income': income_stmt.loc['NetIncome'] if 'NetIncome' in income_stmt.index else 0,
                     'Total Assets': balance_sheet.loc['TotalAssets'],
                     'Total Debt': balance_sheet.loc['TotalDebt'],
-
+                    'GoodwillAndOtherIntangibleAssets' : balance_sheet.loc['GoodwillAndOtherIntangibleAssets'] if 'GoodwillAndOtherIntangibleAssets' in balance_sheet.index else 0,
                 }    
      
         balance_sheet_data=pd.DataFrame(balance_sheet_data)
@@ -578,8 +578,8 @@ if 'Balance Sheet' in data_selection:
         colors_palette = ['#87bdd8','#daebe8','#cfe0e8','#667292','#77a8a8','#b9b0b0','#e3e0cc','#fefbd8','#fb967f','#e3eaa7']
 
         # Doghnut Chart for Assets
-        asset_doghnut = balance_sheet_data[['Total Cash','Account Receivables','Inventory','Receivables','Other Current Assets','Net PPE','Other Investments','Other Non Current Assets']].reset_index()
-        asset_doghnut = asset_doghnut.melt(id_vars='asOfDate', value_vars=['Total Cash','Account Receivables','Inventory','Receivables','Other Current Assets','Net PPE','Other Investments','Other Non Current Assets'])
+        asset_doghnut = balance_sheet_data[['Total Cash','Account Receivables','Inventory','Receivables','Other Current Assets','Net PPE','Other Investments','Other Non Current Assets','GoodwillAndOtherIntangibleAssets']].reset_index()
+        asset_doghnut = asset_doghnut.melt(id_vars='asOfDate', value_vars=['Total Cash','Account Receivables','Inventory','Receivables','Other Current Assets','Net PPE','Other Investments','Other Non Current Assets','GoodwillAndOtherIntangibleAssets'])
 
         asset_doghnut_chart = px.pie(asset_doghnut, values='value', names='variable', color='variable', hole=0.4, 
                                      height=450, width=200, color_discrete_sequence=colors_palette)
