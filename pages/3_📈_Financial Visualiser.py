@@ -32,7 +32,7 @@ with open(css_file) as f:
 
 # Input at sidebar
 # Input text box
-ticker = st.sidebar.text_input('Enter any ticker to display their financial statistics', 'AAPL')
+ticker = st.sidebar.text_input('Enter any ticker to display their financial statistics', 'IQV')
 st.sidebar.write('The current selected ticker is:', ticker.upper()) 
 data_selection = st.sidebar.multiselect('Select displayed data', ['Income Statement','Balance Sheet'], default = ['Income Statement','Balance Sheet']) # default='Stock Price'
 annual_or_quarter = st.sidebar.radio('Annual or Quarter Data:', ('Annual', 'Quarter '), horizontal=True, index=(0))
