@@ -18,7 +18,7 @@ st.header(page_icon + " " + page_title)
 st.markdown("""
 <style>
 .big-font {
-    font-size:20px !important;
+    font-size:20px !important; 
 }
 </style>
 """, unsafe_allow_html=True)
@@ -38,16 +38,16 @@ data_selection = st.sidebar.multiselect('Select displayed data', ['Income Statem
 annual_or_quarter = st.sidebar.radio('Annual or Quarter Data:', ('Annual', 'Quarter '), horizontal=True, index=(0))
 if 'Income Statement' in data_selection:
     df_is_select = st.sidebar.radio('Display the source data:', ('Yes', 'No'), horizontal=True, index=(1))
-# Display warning if ticker is not found
+# Display warning if ticker is not found 
 
 stock = Ticker(ticker)
 
-# Heading 
+# Headings 
 st.markdown("##### An interactive financial dash board to display the financial situation of any listed company with an intuitive GUI.") 
 st.caption("### The Financial Visualiser does not support ETF, support for the the cash flow statement coming soon.")
 st.caption('---')
 st.markdown(f'#### The current selected ticker is: {ticker.upper()}')     
-st.caption('### Open the side bar to change ticker and settings')
+st.caption('### Open the side bar to change ticker or other settings')
 st.caption('### This page is optimized for use with larger screens, making it most effective when accessed via a tablet or PC for an optimal user experience.')
 
 if ticker:
@@ -63,20 +63,43 @@ if ticker:
         income_stmt = income_stmt.drop(income_stmt.columns[0], axis=1)
         income_stmt = income_stmt[income_stmt["periodType"] != "TTM"] #weird bug
         income_stmt = income_stmt.set_index(income_stmt.columns[0])
-        income_stmt =income_stmt
+        income_stmt =income_stmt = income_stmt[income_stmt['currencyCode'] == 'USD']
         income_stmt = income_stmt.transpose()
         income_statement_data = income_stmt
-
         
+        # st.write(income_statement_data)
         # Income statement dataframe
+        # COGS
+        try:
+            cost_of_revenue = income_statement_data.loc['CostOfRevenue']
+        except :
+            try:
+                cost_of_revenue = income_statement_data.loc['SellingGeneralAndAdministration']
+            except :
+                cost_of_revenue = 0
+
+        # Operating Expense
+        try:
+            operating_exp = income_statement_data.loc['OperatingExpense']
+        except :
+            try:
+                operating_exp = income_statement_data.loc['SellingGeneralAndAdministration']
+            except :
+                operating_exp = 0
+                
+       
         data = {
             'Total Revenue': income_statement_data.loc['TotalRevenue'],
-            'Cost of revenue': income_statement_data.loc['CostOfRevenue'],
-            'Gross profit': income_statement_data.loc['GrossProfit'],
-            'Operating expenses': income_statement_data.loc['OperatingExpense'],
-            'Operating income': income_statement_data.loc['OperatingIncome'],
-            'Interest expense': income_statement_data.loc['NetNonOperatingInterestIncomeExpense'],
-            'Other Income Expense': income_statement_data.loc['OtherIncomeExpense'],
+            'Cost of revenue': cost_of_revenue,
+            'Gross profit': income_statement_data.loc['GrossProfit']if 
+            'GrossProfit' in income_statement_data.index else 0,
+            'Operating expenses': operating_exp,
+            'Operating income': income_statement_data.loc['OperatingIncome']if 
+            'OperatingIncome' in income_statement_data.index else 0,
+            'Interest expense': income_statement_data.loc['NetNonOperatingInterestIncomeExpense']if 
+            'NetNonOperatingInterestIncomeExpense' in income_statement_data.index else 0,
+            'Other Income Expense': income_statement_data.loc['OtherIncomeExpense']if 
+            'OtherIncomeExpense' in income_statement_data.index else 0,
             'Other Non Operating Income Expenses': income_statement_data.loc['OtherNonOperatingIncomeExpenses'] if 'OtherNonOperatingIncomeExpenses' in income_statement_data.index else 0,
             'Pretax Income': income_statement_data.loc['PretaxIncome'],
             'Tax Provision': income_statement_data.loc['TaxProvision'],
@@ -96,7 +119,17 @@ if ticker:
                                     'NetIncome':'Net income'}) 
         data = data.replace('nan', 0)
         data = data.astype(float)
-   
+
+        # Operating Income
+        if (data['Operating income'] == 0).all():
+            data['Operating income'] = data['Total Revenue'] - data['Operating expenses']
+
+        # Gross Profit
+        if (data['Gross profit'] == 0).all():
+            data['Gross profit'] = data['Total Revenue'] - data['Cost of revenue']
+
+
+
 def format_number(number):
     if number >= 1000000000:
         return '{:.2f}B'.format(number / 1000000000)
@@ -323,40 +356,61 @@ if 'Income Statement' in data_selection:
             st.plotly_chart(tr_break_donut, use_container_width=True)
 
         # Sankey diagram for income statement
-        Gross_profit = income_statement_data.loc['GrossProfit'][1]
-        cost_of_revenue = income_statement_data.loc['CostOfRevenue'][1]
-        opt_exp = income_statement_data.loc['OperatingExpense'][1]
-        opt_income = income_statement_data.loc['OperatingIncome'][1]
-        pretax_income = income_statement_data.loc['PretaxIncome'][1]
-        interest_exp = income_statement_data.loc['NetNonOperatingInterestIncomeExpense'][1]
-        other_nonincome_exp = income_statement_data.loc['OtherIncomeExpense'][1]
-        other_non_opt_income_exp = income_statement_data.loc['OtherNonOperatingIncomeExpenses'][1] if 'OtherNonOperatingIncomeExpenses' in income_statement_data.index else 0
-        net_income = income_statement_data.loc['NetIncome'][1]
-        tax_provision =  income_statement_data.loc['TaxProvision'][1]
 
-        # Sankey diagram for income statement
-        df = pd.DataFrame({'From': ['Total Revenue', 'Total Revenue', 'Gross profit', 'Gross profit', 'Operating income', 'Operating income', 'Operating income', 'Operating income', 'Pretax Income', 'Pretax Income'], 
-                        'To': ['Gross profit', 'Cost of revenue', 'Operating expenses', 'Operating income', 'Pretax Income', 'Interest expense', 'Other Income Expense', 'Other Non Operating Income Expenses', 'Net income', 'Tax Provision'], 
-                        'Value': [Gross_profit, cost_of_revenue, opt_exp, opt_income, pretax_income, interest_exp, other_nonincome_exp, other_non_opt_income_exp, net_income, tax_provision]})
+        try:
+            try:
+                Gross_profit = income_statement_data.loc['GrossProfit'][1]
+            except:
+                Gross_profit = data['Gross profit'][1]
 
-        node_label = df['From'].append(df['To']).unique()
-        nodes = [{'label': label} for label in node_label]
+            try:    
+                cost_of_revenue = income_statement_data.loc['CostOfRevenue'][1]
+            except:
+                cost_of_revenue = data['Cost of revenue'][1]
+            
+            try:
+                opt_exp = income_statement_data.loc['OperatingExpense'][1]
+            except:
+                opt_exp = data['Operating expenses']
 
-        source_indices = df['From'].map(lambda label: node_label.tolist().index(label))
-        target_indices = df['To'].map(lambda label: node_label.tolist().index(label))
+            try:
+                opt_income = income_statement_data.loc['OperatingIncome'][1]
+            except:    
+                opt_income = data['Operating income']
+            
+            pretax_income = income_statement_data.loc['PretaxIncome'][1]
+            interest_exp = income_statement_data.loc['NetNonOperatingInterestIncomeExpense'][1]if 'NetNonOperatingInterestIncomeExpense' in income_statement_data.index else 0
+            other_nonincome_exp = income_statement_data.loc['OtherIncomeExpense'][1]
+            other_non_opt_income_exp = income_statement_data.loc['OtherNonOperatingIncomeExpenses'][1] if 'OtherNonOperatingIncomeExpenses' in income_statement_data.index else 0
+            net_income = income_statement_data.loc['NetIncome'][1]
+            tax_provision =  income_statement_data.loc['TaxProvision'][1]
 
-        sankey = go.Sankey(node=dict(label=node_label,
-                                    x=[0.1,0.23,0.4,0.6,0.65,0.45,0.65,0.97,0.65,0.97,0.87],
-                                    y=[0.5,0.7,0.6,0.5,0.1,0.8,0.7,0.45,0.8,0.5,0.65]),
-                        link=dict(arrowlen=15,
-                                    source=source_indices,
-                                    target=target_indices,
-                                    value=df['Value']))
+            # Sankey diagram for income statement
+            df = pd.DataFrame({'From': ['Total Revenue', 'Total Revenue', 'Gross profit', 'Gross profit', 'Operating income', 'Operating income', 'Operating income', 'Operating income', 'Pretax Income', 'Pretax Income'], 
+                            'To': ['Gross profit', 'Cost of revenue', 'Operating expenses', 'Operating income', 'Pretax Income', 'Interest expense', 'Other Income Expense', 'Other Non Operating Income Expenses', 'Net income', 'Tax Provision'], 
+                            'Value': [Gross_profit, cost_of_revenue, opt_exp, opt_income, pretax_income, interest_exp, other_nonincome_exp, other_non_opt_income_exp, net_income, tax_provision]})
 
-        layout = go.Layout(width=800, height=450, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+            node_label = df['From'].append(df['To']).unique()
+            nodes = [{'label': label} for label in node_label]
 
-        st.markdown('### Sankey Diagram:')
-        st.plotly_chart(go.Figure(data=[sankey], layout=layout)) 
+            source_indices = df['From'].map(lambda label: node_label.tolist().index(label))
+            target_indices = df['To'].map(lambda label: node_label.tolist().index(label))
+
+            sankey = go.Sankey(node=dict(label=node_label,
+                                        x=[0.1,0.23,0.4,0.6,0.65,0.45,0.65,0.97,0.65,0.97,0.87],
+                                        y=[0.5,0.7,0.6,0.5,0.1,0.8,0.7,0.45,0.8,0.5,0.65]),
+                            link=dict(arrowlen=15,
+                                        source=source_indices,
+                                        target=target_indices,
+                                        value=df['Value']))
+
+            layout = go.Layout(width=800, height=450, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+
+            st.markdown('### Sankey Diagram:')
+            st.plotly_chart(go.Figure(data=[sankey], layout=layout)) 
+
+        except:
+            pass
 
         if df_is_select == 'Yes':
             st.dataframe(income_statement_data)
@@ -385,7 +439,6 @@ if 'Balance Sheet' in data_selection:
         income_stmt = income_stmt.set_index(income_stmt.columns[0])
         income_stmt = income_stmt.transpose()
         
-
         # Get the needed data from the balance sheet
         balance_sheet_data = {
                     'Current Assets': balance_sheet.loc['CurrentAssets'] if 'CurrentAssets' in balance_sheet.index else 0,
@@ -412,11 +465,11 @@ if 'Balance Sheet' in data_selection:
                     'Total Debt': balance_sheet.loc['TotalDebt'],
                     'GoodwillAndOtherIntangibleAssets' : balance_sheet.loc['GoodwillAndOtherIntangibleAssets'] if 'GoodwillAndOtherIntangibleAssets' in balance_sheet.index else 0,
                 }    
-     
+
         balance_sheet_data=pd.DataFrame(balance_sheet_data)
+        
         balance_sheet_data=balance_sheet_data
         
-
         balance_sheet_data = balance_sheet_data.astype(float)
 
             
@@ -431,18 +484,20 @@ if 'Balance Sheet' in data_selection:
         quick_change = quick_ratio-prev_quick
         quick_change = round(quick_change,2)
 
-
-        # Extract the quick ratio data for the past 4 years
-        quick_ratio_data = {'CurrentAssets': balance_sheet.loc['CurrentAssets'] if 'CurrentAssets' in balance_sheet.index else 0,
-                            'Inventory': balance_sheet.loc['Inventory'] if 'Inventory' in balance_sheet.index else 0,
-                            'CurrentLiabilities': balance_sheet.loc['CurrentLiabilities'] if 'CurrentLiabilities' in balance_sheet.index else 0,
-                            }
+        try:
+            # Extract the quick ratio data for the past 4 years
+            quick_ratio_data = {'CurrentAssets': balance_sheet.loc['CurrentAssets'] if 'CurrentAssets' in balance_sheet.index else 0,
+                                'Inventory': balance_sheet.loc['Inventory'] if 'Inventory' in balance_sheet.index else 0,
+                                'CurrentLiabilities': balance_sheet.loc['CurrentLiabilities'] if 'CurrentLiabilities' in balance_sheet.index else 0,
+                                }
+            
+            quick_ratio_data = pd.DataFrame(quick_ratio_data)
+            quick_ratio_data = quick_ratio_data.astype(float)
+            quick_ratio_data['QuickRatio'] = (quick_ratio_data['CurrentAssets'] - quick_ratio_data['Inventory'])/quick_ratio_data['CurrentLiabilities']
         
-        quick_ratio_data = pd.DataFrame(quick_ratio_data)
-        quick_ratio_data = quick_ratio_data.astype(float)
-        quick_ratio_data['QuickRatio'] = (quick_ratio_data['CurrentAssets'] - quick_ratio_data['Inventory'])/quick_ratio_data['CurrentLiabilities']
-        
-        
+        except:
+            st.info('Data Unavaliable, Entered ticker does not have enough data points.')
+            st.stop()
 
         # Define the color palette
         quick_ratio_colour = ['rgb(70, 210, 210)']
